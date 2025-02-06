@@ -1,4 +1,5 @@
 # MFM_extractor/models/__init__.py
+
 MODEL_REGISTRY = {
     "1": {
         "name": "MERT-v0",

@@ -8,7 +8,15 @@ def model_list():
     for key, info in sorted(MODEL_REGISTRY.items(), key=lambda x: int(x[0])):
         print(f"{key}. {info['name']}")
 
-def extract_from(selection, folder_path, output_file, device='cpu', combine_mode='weighted'):
+def extract_from(selection, folder_path, output_file, device='cpu'):
+    """
+    Launch feature extraction for the selected model.
+
+    :param selection: The key (as string) of the selected model from MODEL_REGISTRY
+    :param folder_path: Folder containing .wav files
+    :param output_file: CSV output path
+    :param device: 'cpu' or 'cuda'
+    """
     if selection not in MODEL_REGISTRY:
         print(f"Invalid selection '{selection}'.")
         model_list()
@@ -19,13 +27,19 @@ def extract_from(selection, folder_path, output_file, device='cpu', combine_mode
     class_name = model_info["class"]
 
     # Dynamically import the module
-    mod = importlib.import_module(module_name)
+    try:
+        mod = importlib.import_module(module_name)
+    except ImportError as e:
+        print(f"Could not import module {module_name}: {e}")
+        return
 
-    # Get the class from the module
-    extractor_class = getattr(mod, class_name)
+    # Retrieve the class
+    try:
+        extractor_class = getattr(mod, class_name)
+    except AttributeError as e:
+        print(f"Module '{module_name}' does not have a class named '{class_name}': {e}")
+        return
 
     # Instantiate the extractor
-    extractor = extractor_class(device=device, combine_mode=combine_mode)
-    
-    # Now run extraction
+    extractor = extractor_class(device=device)
     extractor.extract_folder(folder_path, output_file)
