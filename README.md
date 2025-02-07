@@ -12,6 +12,9 @@
    model_list()
    ```
    ```
+   pip install -r requirements.txt
+   ```
+   ```
    extract_from(
     selection="1",
     folder_path="/path/to/your/wav/files",    # .wav
