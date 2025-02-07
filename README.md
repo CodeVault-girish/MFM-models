@@ -14,6 +14,7 @@
    ```
    pip install -r requirements.txt
    ```
+2. **To get the embeddings**
    ```
    extract_from(
     selection="1",
