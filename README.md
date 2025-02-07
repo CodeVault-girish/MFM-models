@@ -7,14 +7,16 @@
    git clone https://github.com/CodeVault-girish/MFM-models.git
    cd  MFM-models
    ```
+2. **To get list of models**
    ```
    from MFM_extractor import model_list, extract_from
    model_list()
    ```
+3. **Install to avoid beckend error**   
    ```
    pip install -r requirements.txt
    ```
-2. **To get the embeddings**
+4. **To get the embeddings**
    ```
    extract_from(
     selection="1",
