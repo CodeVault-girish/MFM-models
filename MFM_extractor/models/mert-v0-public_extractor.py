@@ -1,5 +1,3 @@
-# MFM_extractor/models/mert_v0_extractor.py
-
 import os
 import numpy as np
 import pandas as pd
@@ -10,21 +8,21 @@ import torchaudio.transforms as T
 from transformers import Wav2Vec2FeatureExtractor, AutoModel
 from tqdm import tqdm
 
-class MertV0Extractor:
+class MertV0PublicExtractor:
     def __init__(self, device='cpu'):
         """
-        Initialize the MERT-v0 extractor using m-a-p/MERT-v0.
+        Initialize the MERT-v0-public extractor using m-a-p/MERT-v0-public.
         
         In this version, we use a single aggregator approach:
         a Conv1d that merges the 13 hidden layers into one embedding.
         """
         self.device = torch.device(device if device in ['cpu', 'cuda'] else 'cpu')
         
-        # Load the model (with remote code) and processor
-        self.model = AutoModel.from_pretrained("m-a-p/MERT-v0", trust_remote_code=True).to(self.device)
-        self.processor = Wav2Vec2FeatureExtractor.from_pretrained("m-a-p/MERT-v0", trust_remote_code=True)
+        # Load the model (with remote code) and processor using the public model
+        self.model = AutoModel.from_pretrained("m-a-p/MERT-v0-public", trust_remote_code=True).to(self.device)
+        self.processor = Wav2Vec2FeatureExtractor.from_pretrained("m-a-p/MERT-v0-public", trust_remote_code=True)
 
-        # aggregator for 13 layers => in_channels=13, out_channels=1
+        # Aggregator for 13 layers: in_channels=13, out_channels=1
         self.aggregator = nn.Conv1d(in_channels=13, out_channels=1, kernel_size=1).to(self.device)
 
         # Use the processor's sampling rate if available; default to 16000 otherwise
@@ -32,7 +30,7 @@ class MertV0Extractor:
 
     def extract_features(self, audio_path):
         """
-        Extract features from a single wav file using MERT-v0.
+        Extract features from a single .wav file using MERT-v0-public.
         Returns a numpy array of embeddings after aggregator.
         """
         try:
@@ -61,12 +59,12 @@ class MertV0Extractor:
         all_layer_hidden_states = torch.stack(outputs.hidden_states).squeeze(1)
         # => shape: (13, time, hidden_dim)
  
-        # time_reduced_hidden_states => shape (13, hidden_dim)
+        # Reduce time dimension: shape (13, hidden_dim)
         time_reduced_hidden_states = all_layer_hidden_states.mean(dim=-2)
 
-        # aggregator expects shape (batch_size=1, in_channels=13, seq_len=hidden_dim)
+        # Aggregator expects shape (batch_size=1, in_channels=13, seq_len=hidden_dim)
         time_reduced_hidden_states = time_reduced_hidden_states.unsqueeze(0)
-        # => (1, 13, hidden_dim)
+        # => shape: (1, 13, hidden_dim)
 
         # Weighted average aggregator
         weighted_avg_hidden_states = self.aggregator(time_reduced_hidden_states)

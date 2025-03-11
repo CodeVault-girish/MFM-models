@@ -1,5 +1,3 @@
-# MFM_extractor/models/mert_v0_extractor.py
-
 import os
 import numpy as np
 import pandas as pd
@@ -10,21 +8,21 @@ import torchaudio.transforms as T
 from transformers import Wav2Vec2FeatureExtractor, AutoModel
 from tqdm import tqdm
 
-class MertV0Extractor:
+class MertV195Extractor:
     def __init__(self, device='cpu'):
         """
-        Initialize the MERT-v0 extractor using m-a-p/MERT-v0.
+        Initialize the MERT-v1 extractor using m-a-p/MERT-v1-95M.
         
         In this version, we use a single aggregator approach:
         a Conv1d that merges the 13 hidden layers into one embedding.
         """
         self.device = torch.device(device if device in ['cpu', 'cuda'] else 'cpu')
         
-        # Load the model (with remote code) and processor
-        self.model = AutoModel.from_pretrained("m-a-p/MERT-v0", trust_remote_code=True).to(self.device)
-        self.processor = Wav2Vec2FeatureExtractor.from_pretrained("m-a-p/MERT-v0", trust_remote_code=True)
+        # Load the model (with remote code) and processor using the v1-95M weights
+        self.model = AutoModel.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True).to(self.device)
+        self.processor = Wav2Vec2FeatureExtractor.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True)
 
-        # aggregator for 13 layers => in_channels=13, out_channels=1
+        # Aggregator for 13 layers: in_channels=13, out_channels=1
         self.aggregator = nn.Conv1d(in_channels=13, out_channels=1, kernel_size=1).to(self.device)
 
         # Use the processor's sampling rate if available; default to 16000 otherwise
@@ -32,8 +30,8 @@ class MertV0Extractor:
 
     def extract_features(self, audio_path):
         """
-        Extract features from a single wav file using MERT-v0.
-        Returns a numpy array of embeddings after aggregator.
+        Extract features from a single .wav file using MERT-v1-95M.
+        Returns a numpy array of embeddings after aggregation.
         """
         try:
             waveform, sampling_rate = torchaudio.load(audio_path)
@@ -41,38 +39,38 @@ class MertV0Extractor:
             print(f"Error loading {audio_path}: {e}")
             return None
         
-        # Resample if needed
+        # Resample the audio if needed
         if sampling_rate != self.resample_rate:
             resampler = T.Resample(sampling_rate, self.resample_rate)
             waveform = resampler(waveform)
 
-        # Process the audio input
+        # Process the audio input with the feature extractor
         inputs = self.processor(
             waveform.squeeze().numpy(),
             sampling_rate=self.resample_rate,
             return_tensors="pt"
         ).to(self.device)
 
-        # Extract features with hidden states
+        # Extract features with hidden states from the model
         with torch.no_grad():
             outputs = self.model(**inputs, output_hidden_states=True)
 
-        # Stack all hidden states => shape (num_layers, batch=1, time, hidden_dim)
+        # Stack all hidden states: shape (num_layers, batch=1, time, hidden_dim)
         all_layer_hidden_states = torch.stack(outputs.hidden_states).squeeze(1)
-        # => shape: (13, time, hidden_dim)
- 
-        # time_reduced_hidden_states => shape (13, hidden_dim)
+        # Expected shape: (13, time, hidden_dim)
+
+        # Reduce across the time dimension: shape becomes (13, hidden_dim)
         time_reduced_hidden_states = all_layer_hidden_states.mean(dim=-2)
 
-        # aggregator expects shape (batch_size=1, in_channels=13, seq_len=hidden_dim)
+        # The aggregator expects input of shape (batch_size=1, in_channels=13, seq_len=hidden_dim)
         time_reduced_hidden_states = time_reduced_hidden_states.unsqueeze(0)
-        # => (1, 13, hidden_dim)
+        # Now shape is: (1, 13, hidden_dim)
 
-        # Weighted average aggregator
+        # Apply the weighted average aggregator
         weighted_avg_hidden_states = self.aggregator(time_reduced_hidden_states)
-        # => shape: (1, 1, hidden_dim)
+        # Resulting shape: (1, 1, hidden_dim)
         weighted_avg_hidden_states = weighted_avg_hidden_states.squeeze(0).squeeze(0)
-        # => shape: (hidden_dim,)
+        # Final shape: (hidden_dim,)
 
         return weighted_avg_hidden_states.detach().cpu().numpy()
 
