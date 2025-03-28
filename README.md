@@ -22,6 +22,8 @@
     selection="1",
     folder_path="/path/to/your/wav/files",    # .wav
     output_file="/path/to/save/output.csv",   
-    device="cuda"                             
+    device="cuda", 
+    batch_size=4, 
+    num_workers=1                             
     )
 
