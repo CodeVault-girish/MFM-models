@@ -23,6 +23,7 @@ class Music2VecExtractor:
                             If 1, batches are processed sequentially.
         """
         self.device = torch.device(device if device in ['cpu', 'cuda'] else 'cpu')
+        print(self.device)
         
         # Load the processor from facebook/data2vec-audio-base-960h
         self.processor = Wav2Vec2Processor.from_pretrained("facebook/data2vec-audio-base-960h")

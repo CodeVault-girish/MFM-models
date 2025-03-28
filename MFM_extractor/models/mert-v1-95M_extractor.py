@@ -23,6 +23,7 @@ class MertV195Extractor:
                             If 1, batches are processed sequentially.
         """
         self.device = torch.device(device if device in ['cpu', 'cuda'] else 'cpu')
+        print(self.device)
         
         # Load the model (with remote code) and processor using the v1-95M weights
         self.model = AutoModel.from_pretrained("m-a-p/MERT-v1-95M", trust_remote_code=True).to(self.device)

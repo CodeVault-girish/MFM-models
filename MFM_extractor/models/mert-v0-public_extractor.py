@@ -23,6 +23,7 @@ class MertV0PublicExtractor:
                             If 1, batches are processed sequentially.
         """
         self.device = torch.device(device if device in ['cpu', 'cuda'] else 'cpu')
+        print(self.device)
         
         # Load the public model and processor
         self.model = AutoModel.from_pretrained("m-a-p/MERT-v0-public", trust_remote_code=True).to(self.device)

@@ -23,6 +23,7 @@ class MertV1330MExtractor:
                             If 1, batches are processed sequentially.
         """
         self.device = torch.device(device if device in ['cpu', 'cuda'] else 'cpu')
+        print(self.device)
         
         # Load the model and processor using the 330M weights
         self.model = AutoModel.from_pretrained("m-a-p/MERT-v1-330M", trust_remote_code=True).to(self.device)
