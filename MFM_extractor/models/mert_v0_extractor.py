@@ -102,7 +102,7 @@ class MertV0Extractor:
         # Pass through aggregator: expects input shape (batch_size, in_channels, seq_len)
         aggregated = self.aggregator(time_reduced_hidden_states)  # shape: (batch_size, 1, hidden_dim)
         aggregated = aggregated.squeeze(1)  # shape: (batch_size, hidden_dim)
-        return [emb.cpu().numpy() for emb in aggregated]
+        return [emb.detach().cpu().numpy() for emb in aggregated]
 
     def extract_folder(self, folder_path, output_file):
         """

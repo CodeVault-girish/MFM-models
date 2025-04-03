@@ -107,7 +107,8 @@ class Music2VecExtractor:
         # Pass through aggregator: expects input shape (batch, in_channels=13, seq_len=hidden_dim)
         aggregated = self.aggregator(time_reduced_hidden_states)  # shape: (batch, 1, hidden_dim)
         aggregated = aggregated.squeeze(1)  # shape: (batch, hidden_dim)
-        return [emb.cpu().numpy() for emb in aggregated]
+        return [emb.detach().cpu().numpy() for emb in aggregated]
+
 
     def extract_folder(self, folder_path, output_file):
         """
